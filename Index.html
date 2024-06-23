@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Buzz Kill</title>
+        <style>
+            body {
+                width: 100vw;
+                overflow-x: hidden;
+                background-image: url("Yellow Hazard Stripes Texture.jpg");
+                filter: blur(0.3px);
+                background-size: cover;
+                background-position: center;
+                font-family: Monaco, Verdana, sans-serif;
+            }
+
+            #header {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 28px 0 0 0;
+            }
+
+            #title {
+                background: linear-gradient(#f11717, #6f249e);
+                border: 2px solid black;
+                display: inline-block;
+                color: white;
+                padding: 10px;
+                margin: 12px 0 20px 0;
+                border-radius: 5px;
+            }
+
+            #wasp-grid {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #wasp-nest {
+                display: grid;
+                grid-template-columns: auto auto;
+                gap: 10px;
+                width: 80vw;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .wasp {
+                padding: 10px;
+                margin: 4px 0 4px 0;
+                border: 2px solid black;
+                border-radius: 5px;
+                display: inline-block;
+                color: white;
+                font-size: 16px;
+                text-align: center;
+            }
+
+            #button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            button {
+                background: linear-gradient(#f11717, #6f249e);
+                border: 4px solid black;
+                display: inline-block;
+                color: white;
+                border-top-left-radius: 5px;
+                border-top-right-radius: 35px;
+                border-bottom-right-radius: 5px;
+                border-bottom-left-radius: 35px;
+                font-size: 40px;
+                margin: 20px 0 20px 0;
+                padding: 10px;
+                align-self: center;
+                cursor: pointer;
+            }
+
+            #bottom-bar {
+                width: 100%;
+                height: 100px;
+                background-color: #0a0808;
+                color: white;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #attack-count-text {
+                display: inline-block;
+                color: white;
+                font-size: 16px;
+                margin: 8px 8px 8px 0;
+                padding: 10px;
+            }
+
+            #alert {
+                font-size: 24px;
+                margin: 0 0 20px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div id='container'>
+            <div id="header">
+                <h2 id="title">BUZZ KILL<i> - Destroy the wasp nest!</i></h2>
+            </div>
+            <div id="wasp-grid">
+                <div id='wasp-nest'></div>
+            </div>
+            <div id="button">
+                <button onclick="attack()">ATTACK!</button>
+            </div>
+            <div id="bottom-bar">
+                <p id="attack-count-text">Attack Count: <span id='attack-count'>0</span></p>
+                <p id='alert'>Aim carefully....</p>
+            </div>
+        </div>
+
+        <script>
+            /* Starting health points */
+            const queenHealth = 80;
+            const workerHealth = 68;
+            const droneHealth = 60;
+
+            /* Loss of health upon being hit */
+            const queenHitImpact = 7;
+            const workerHitImpact = 10;
+            const droneHitImpact = 12;
+
+            const waspColors = {
+                'queen': '#6f249e',
+                'worker': '#ef8030',
+                'drone': '#249e6f'
+            };
+
+            const alertElement = document.getElementById('alert');
+            const buttonElement = document.getElementById('button');
+            const attackCountElement = document.getElementById('attack-count');
+            const waspNestElement = document.getElementById('wasp-nest');
+            const waspCount = 14;
+            const queenName = '👑 Queen Calathea 👑';
+            const wasps = [];
+            let livingWaspIDs = [];
+            let targetId = 0;
+
+            setupGame();
+            
+            /* Set the game up with fresh starting values */
+            function setupGame() {
+                let role = '';
+                let health = 0;
+                let hitImpact = 0;
+                let waspNames = ['Calathea', 'Corydalis', 'Monstera', 'Agapanthus', 'Calamus', 'Aralia', 'Pothos', 'Araucaria', 'Crocus', 'Buckeye', 'Yarrow', 'Verbena', 'Nemesia', 'Viburnum'];
+                let waspElements = [];
+
+                for (let i = 1; i <= waspCount; i++) {
+                    switch (true) {
+                        case i === 1:
+                            role = 'queen';
+                            health = queenHealth;
+                            hitImpact = queenHitImpact;
+                            break;
+                        case i > 1 && i <= 6:
+                            role = 'worker';
+                            health = workerHealth;
+                            hitImpact = workerHitImpact;
+                            break;
+                        default:
+                            role = 'drone';
+                            health = droneHealth;
+                            hitImpact = droneHitImpact;
+                    }
+                    wasps[i] = {
+                        'role': role,
+                        'health': health,
+                        'hitImpact': hitImpact,
+                        'name': waspNames[i - 1]
+                    };
+                    livingWaspIDs.push(i);
+                    waspElements.push(`
+                        <div class="wasp ${wasps[i].role}" id="${wasps[i].name}" style="background: ${waspBackground(i, wasps[i].health)}">
+                            ${isQueen(i) ? queenName : `${wasps[i].name} <i> - ${wasps[i].role} wasp</i>`} - HP: <span id=wasp-health${i}>${wasps[i].health}</span>
+                        </div>
+                    `);
+                }
+
+                waspNestElement.innerHTML = shuffle(waspElements).join('');
+            }
+
+            /* Randomise the elements of an array */
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            /* Determine whether a wasp is the queen */
+            function isQueen(id) {
+                return wasps[id].role === 'queen';
+            }
+
+            /* Get wasp name */
+            function getName(id) {
+                return isQueen(id) ? queenName : wasps[id].name;
+            }
+
+            /* Hit a random living wasp */
+            function attack() {
+                attackCountElement.innerText++;
+                setPreviousTargetBackground();
+                targetId = getTargetId();
+                wasps[targetId].health = wasps[targetId].health - wasps[targetId].hitImpact, 0;
+                if (wasps[targetId].health <= 0) {
+                    isQueen(targetId) ? endGame() : killTarget(targetId);
+                } else {
+                    hitTarget(targetId);
+                }
+            }
+
+            /* After having been hit in a previous attack, set the background */
+            function setPreviousTargetBackground() {
+                if (targetId != 0) {
+                    const waspHealth = wasps[targetId].health;
+                    const waspElement = document.getElementById(wasps[targetId].name);
+                    if (waspHealth > 0) {
+                        waspElement.style.background = waspBackground(targetId, waspHealth);
+                    } else {
+                        waspElement.style.background = 'black';
+                        waspElement.style.filter = 'blur(10px)';
+                    }
+                }
+            }
+
+            /* Get the lineaer gradient for the wasp background */
+            function waspBackground(id, waspHealth) {
+                const waspColor = waspColors[wasps[id].role];
+                return `
+                    linear-gradient(to right, 
+                        ${waspColor} ${waspHealth}%, 
+                        ${waspColor} ${waspHealth - 20}%, 
+                        black ${waspHealth + 20}%, 
+                        black ${waspHealth}%
+                    )
+                `;
+            }
+
+            /* Select a random living wasp to target */
+            function getTargetId() {
+                return shuffle(livingWaspIDs)[0];
+            }
+
+            /* Convert a living wasp into a dead wasp */
+            function killTarget(targetId) {
+                const deadText = ['is worm food', 'is dead', 'is kaput!', 'has joined their ancestors', 'met their demise', 'met an untimely end', 'R.I.P.', 'ended their earthly career', 'bit the dust', 'is rotting in hell', 'has been whacked', 'has met their maker', 'has buzzed their last buzz'];
+                alertElement.innerText = `${wasps[targetId].name} ${shuffle(deadText)[0]} 💀`;
+                livingWaspIDs.splice(livingWaspIDs.indexOf(targetId), 1);
+                document.getElementById(`wasp-health${targetId}`).innerText = 0;
+                const waspElement = document.getElementById(wasps[targetId].name);
+                waspElement.style.background = 'darkred';
+                waspElement.style.filter = 'blur(1px)';
+            }
+
+            /* Inflict damage on a living wasp */
+            function hitTarget(targetId) {
+                const encouragements = [' Keep going!', ' Great shot!', ' Nice one mate', ' Aaahhhh yeeeahhh', ' That was sick!', ' Right in the face!', ' Yes m8', ' Well done', ' You got dis', ' You da man!', ' Preach it sista', " Show 'em who's boss!", ' Excellent work', ' I love you'];
+                alertElement.innerText = `${getName(targetId)} was hit!${shouldEncourage() ? shuffle(encouragements)[0] : ''}`;
+                document.getElementById(`wasp-health${targetId}`).innerText = wasps[targetId].health;
+                document.getElementById(wasps[targetId].name).style.background = 'darkred';
+            }
+
+            /* Determine whether to display a message of encouragement */
+            function shouldEncourage() {
+                return attackCountElement.innerText % 9 === 0;
+            }
+
+            /* Convert all remaining wasps into dead wasps and end the game */
+            function endGame() {
+                livingWaspIDs.slice().forEach(function(targetId, index) { /* `slice()` creates a shallow copy of the array, so the original array is not modified during iteration */
+                    killTarget(targetId);
+                });
+                alertElement.innerText = `🏁🏁 GAME OVER 🏁🏁 // The wasp nest has been destroyed`;
+                buttonElement.innerHTML = `<button onclick="newGame()">New Game</button>`;
+            }
+
+            /* Reset the game */
+            function newGame() {
+                livingWaspIDs = [];
+                buttonElement.innerHTML = `<button onclick="attack()">ATTACK!</button>`;
+                alertElement.innerText = `I see you've developed a taste for wasp blood...`;
+                attackCountElement.innerText = 0;
+                setupGame();
+            }
+        </script>
+    </body>
+</html>
