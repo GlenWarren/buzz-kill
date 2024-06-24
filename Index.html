@@ -270,7 +270,7 @@
 
             /* Inflict damage on a living wasp */
             function hitTarget(targetId) {
-                const encouragements = [' Keep going!', ' Great shot!', ' Nice one mate', ' Aaahhhh yeeeahhh', ' That was sick!', ' Right in the face!', ' Yes m8', ' Well done', ' You got dis', ' You da man!', ' Preach it sista', " Show 'em who's boss!", ' Excellent work', ' I love you'];
+                const encouragements = [' Keep going!', ' Great shot!', ' Nice one mate', ' Aaahhhh yeeeahhh', ' That was sick!', ' Right in the face!', ' Yes m8', ' Well done', ' You got dis', ' You da man!', ' Preach it sista', " Show 'em who's boss!", ' Excellent work'];
                 alertElement.innerText = `${getName(targetId)} was hit!${shouldEncourage() ? shuffle(encouragements)[0] : ''}`;
                 document.getElementById(`wasp-health${targetId}`).innerText = wasps[targetId].health;
                 document.getElementById(wasps[targetId].name).style.background = 'darkred';
